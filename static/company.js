@@ -308,9 +308,9 @@ function renderHistory() {
     if (DATA.change_log.length) {
         html += '<div class="card"><div class="card-header">Change Log</div><div class="card-body">';
         for (const cl of DATA.change_log) {
-            const date = cl.created_at ? cl.created_at.split("T")[0] : "";
+            const date = fmtDate(cl.effective_date || cl.created_at);
             const undone = cl.is_undone ? " (undone)" : "";
-            html += `<div class="history-item"><div class="history-meta">${esc(cl.action)}${undone} &mdash; ${date}</div><div class="history-summary">${esc(cl.summary)}</div></div>`;
+            html += `<div class="history-item"><div class="history-meta">${date} &mdash; ${esc(cl.action)}${undone}</div><div class="history-summary">${esc(cl.summary)}</div></div>`;
         }
         html += "</div></div>";
     }
@@ -335,6 +335,13 @@ async function deleteCompany() {
     } catch {
         alert("Network error.");
     }
+}
+
+function fmtDate(raw) {
+    if (!raw) return "";
+    const d = new Date(raw.includes("T") ? raw : raw + "T00:00:00");
+    if (isNaN(d)) return raw;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function esc(s) {

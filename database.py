@@ -129,6 +129,7 @@ async def init_db():
             details TEXT,
             before_state TEXT,
             is_undone INTEGER DEFAULT 0,
+            effective_date TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_change_log_company_id ON change_log(company_id);
@@ -141,6 +142,12 @@ async def init_db():
         );
         CREATE INDEX IF NOT EXISTS idx_price_history_company_id ON price_history(company_id);
     """)
+
+    # Migrate: add effective_date to change_log if missing
+    cols = await db.execute_fetchall("PRAGMA table_info(change_log)")
+    col_names = [c[1] if isinstance(c, tuple) else c["name"] for c in cols]
+    if "effective_date" not in col_names:
+        await db.execute("ALTER TABLE change_log ADD COLUMN effective_date TEXT")
 
     await db.commit()
     await db.close()

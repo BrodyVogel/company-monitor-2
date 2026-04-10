@@ -162,9 +162,9 @@ async def handle_onboard(data: dict) -> dict:
 
         # Write to change_log
         await db.execute(
-            """INSERT INTO change_log (company_id, action, summary, details, before_state)
-               VALUES (?, 'onboard', ?, ?, NULL)""",
-            (company_id, summary, json.dumps(data)),
+            """INSERT INTO change_log (company_id, action, summary, details, before_state, effective_date)
+               VALUES (?, 'onboard', ?, ?, NULL, ?)""",
+            (company_id, summary, json.dumps(data), materials_date),
         )
 
         await db.commit()

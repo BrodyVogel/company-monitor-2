@@ -60,7 +60,7 @@ async function loadChanges() {
 
         let html = "";
         for (const ch of changes) {
-            const date = ch.created_at ? ch.created_at.split("T")[0] : "";
+            const date = fmtDate(ch.effective_date || ch.created_at);
             html += '<div class="change-item">';
             html += `<div class="change-meta">${esc(ch.company_name)} (${esc(ch.company_ticker)}) &mdash; ${date}</div>`;
             html += `<div class="change-summary">${esc(ch.summary)}</div>`;
@@ -127,6 +127,13 @@ async function submitImport() {
         status.className = "import-status error";
         status.textContent = "Network error.";
     }
+}
+
+function fmtDate(raw) {
+    if (!raw) return "";
+    const d = new Date(raw.includes("T") ? raw : raw + "T00:00:00");
+    if (isNaN(d)) return raw;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function initDropZone() {

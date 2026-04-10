@@ -384,9 +384,9 @@ async def handle_update(data: dict) -> dict:
         # Change log
         update_summary = data.get("update_summary", "Update applied.")
         await db.execute(
-            """INSERT INTO change_log (company_id, action, summary, details, before_state)
-               VALUES (?, 'update', ?, ?, ?)""",
-            (company_id, update_summary, json.dumps(data), json.dumps(before_state)),
+            """INSERT INTO change_log (company_id, action, summary, details, before_state, effective_date)
+               VALUES (?, 'update', ?, ?, ?, ?)""",
+            (company_id, update_summary, json.dumps(data), json.dumps(before_state), update_date),
         )
 
         await db.commit()
