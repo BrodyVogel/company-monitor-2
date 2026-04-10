@@ -2,6 +2,7 @@ let DATA = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadCompany();
+    initDropZone();
     document.getElementById("tabsBar").addEventListener("click", (e) => {
         if (!e.target.classList.contains("tab")) return;
         document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
@@ -10,6 +11,54 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("tab-" + e.target.dataset.tab).classList.add("active");
     });
 });
+
+function initDropZone() {
+    const overlay = document.getElementById("dropOverlay");
+    let dragCounter = 0;
+
+    window.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        dragCounter++;
+        overlay.classList.add("active");
+    });
+    window.addEventListener("dragover", (e) => {
+        e.preventDefault();
+    });
+    window.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter <= 0) {
+            dragCounter = 0;
+            overlay.classList.remove("active");
+        }
+    });
+    window.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        overlay.classList.remove("active");
+
+        const file = e.dataTransfer.files[0];
+        if (!file || !file.name.endsWith(".json")) return;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            const res = await fetch("/api/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            const result = await res.json();
+            if (res.ok) {
+                loadCompany();
+            } else {
+                alert(result.message || "Import failed.");
+            }
+        } catch {
+            alert("Failed to read or import file.");
+        }
+    });
+}
 
 async function loadCompany() {
     try {
@@ -81,15 +130,48 @@ function renderOverview() {
         html += "</tbody></table></div></div>";
     }
 
-    // Catalysts
-    if (DATA.catalysts.length) {
-        html += '<div class="card"><div class="card-header">Catalysts</div><div class="card-body"><table><thead><tr><th>Event</th><th>Expected Date</th><th>Why It Matters</th><th>Status</th></tr></thead><tbody>';
-        for (const cat of DATA.catalysts) {
-            const cls = cat.occurred ? "catalyst-occurred" : "";
-            const status = cat.occurred ? "Occurred" : "Pending";
-            html += `<tr class="${cls}"><td>${esc(cat.event)}</td><td>${esc(cat.expected_date)}</td><td>${esc(cat.why_it_matters)}</td><td>${status}</td></tr>`;
+    // Upcoming Catalysts (not occurred)
+    const upcoming = DATA.catalysts.filter(c => !c.occurred);
+    if (upcoming.length) {
+        html += '<div class="card"><div class="card-header">Upcoming Catalysts</div><div class="card-body"><table><thead><tr><th>Event</th><th>Expected Date</th><th>Why It Matters</th></tr></thead><tbody>';
+        for (const cat of upcoming) {
+            html += `<tr><td>${esc(cat.event)}</td><td>${esc(cat.expected_date)}</td><td>${esc(cat.why_it_matters)}</td></tr>`;
         }
         html += "</tbody></table></div></div>";
+    }
+
+    // Past Events (occurred)
+    const past = DATA.catalysts.filter(c => c.occurred);
+    if (past.length) {
+        html += '<div class="card"><div class="card-header">Past Events</div><div class="card-body"><table><thead><tr><th>Event</th><th>Occurred Date</th><th>Outcome</th></tr></thead><tbody>';
+        for (const cat of past) {
+            html += `<tr class="catalyst-past"><td><span class="catalyst-check">\u2713</span>${esc(cat.event)}</td><td>${esc(cat.occurred_date)}</td><td>${esc(cat.outcome_summary)}</td></tr>`;
+        }
+        html += "</tbody></table></div></div>";
+    }
+
+    // Indicator Status
+    if (DATA.indicators.length) {
+        const regular = DATA.indicators.filter(ind => {
+            const f = (ind.check_frequency || "").toLowerCase();
+            return f !== "event" && f !== "once";
+        });
+        const eventInds = DATA.indicators.filter(ind => {
+            const f = (ind.check_frequency || "").toLowerCase();
+            return f === "event" || f === "once";
+        });
+        html += '<div class="card"><div class="card-header">Indicator Status</div><div class="card-body">';
+        for (const ind of regular) {
+            const badge = ind.status === "action_required" ? "badge-red" : ind.status === "watch" ? "badge-yellow" : "badge-green";
+            const label = ind.status === "action_required" ? "Action Required" : ind.status === "watch" ? "Watch" : "All Clear";
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-size:14px">${esc(ind.name)}</span><span class="badge ${badge}">${label}</span></div>`;
+        }
+        for (const ind of eventInds) {
+            const badge = ind.status === "action_required" ? "badge-red" : ind.status === "watch" ? "badge-yellow" : "badge-green";
+            const label = ind.status === "action_required" ? "Action Required" : ind.status === "watch" ? "Watch" : "All Clear";
+            html += `<div class="indicator-event" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f3f4f6"><span style="font-size:14px">${esc(ind.name)} <span class="badge-event">${esc(ind.check_frequency)}</span></span><span class="badge ${badge}">${label}</span></div>`;
+        }
+        html += "</div></div>";
     }
 
     document.getElementById("tab-overview").innerHTML = html || '<div class="empty">No overview data.</div>';
@@ -112,11 +194,14 @@ function renderScenarios() {
 
     // Indicators table
     if (DATA.indicators.length) {
-        html += '<div class="card"><div class="card-header">Indicators</div><div class="card-body"><table><thead><tr><th>Name</th><th>Current</th><th>Bear</th><th>Bull</th><th>Status</th><th>Commentary</th></tr></thead><tbody>';
+        html += '<div class="card"><div class="card-header">Indicators</div><div class="card-body"><table><thead><tr><th>Name</th><th>Current</th><th>Bear</th><th>Bull</th><th>Frequency</th><th>Status</th><th>Commentary</th></tr></thead><tbody>';
         for (const ind of DATA.indicators) {
             const badge = ind.status === "action_required" ? "badge-red" : ind.status === "watch" ? "badge-yellow" : "badge-green";
             const label = ind.status === "action_required" ? "Action Required" : ind.status === "watch" ? "Watch" : "All Clear";
-            html += `<tr><td>${esc(ind.name)}</td><td>${esc(ind.current_value)}</td><td>${esc(ind.bear_threshold)}</td><td>${esc(ind.bull_threshold)}</td><td><span class="badge ${badge}">${label}</span></td><td>${esc(ind.commentary)}</td></tr>`;
+            const freq = esc(ind.check_frequency);
+            const isEvent = ind.check_frequency && (ind.check_frequency.toLowerCase() === "event" || ind.check_frequency.toLowerCase() === "once");
+            const freqHtml = isEvent ? `${freq} <span class="badge-event">${ind.check_frequency}</span>` : freq;
+            html += `<tr><td>${esc(ind.name)}</td><td>${esc(ind.current_value)}</td><td>${esc(ind.bear_threshold)}</td><td>${esc(ind.bull_threshold)}</td><td>${freqHtml}</td><td><span class="badge ${badge}">${label}</span></td><td>${esc(ind.commentary)}</td></tr>`;
         }
         html += "</tbody></table></div></div>";
     }
@@ -230,7 +315,26 @@ function renderHistory() {
         html += "</div></div>";
     }
 
+    // Delete company link
+    html += `<div style="margin-top:24px"><a class="delete-link" onclick="deleteCompany()">Delete this company</a></div>`;
+
     document.getElementById("tab-history").innerHTML = html || '<div class="empty">No history data.</div>';
+}
+
+async function deleteCompany() {
+    const name = DATA.company.name;
+    if (!confirm(`Delete ${name} and all associated data? This cannot be undone.`)) return;
+    try {
+        const res = await fetch("/api/companies/" + encodeURIComponent(TICKER), { method: "DELETE" });
+        if (res.ok) {
+            window.location.href = "/";
+        } else {
+            const result = await res.json();
+            alert(result.error || "Delete failed.");
+        }
+    } catch {
+        alert("Network error.");
+    }
 }
 
 function esc(s) {

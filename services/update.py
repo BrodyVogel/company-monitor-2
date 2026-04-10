@@ -281,6 +281,12 @@ async def handle_update(data: dict) -> dict:
 
         # Catalysts add
         for cat in data.get("catalysts_add", []):
+            existing = await db.execute_fetchall(
+                "SELECT id FROM catalysts WHERE company_id = ? AND LOWER(TRIM(event)) = LOWER(TRIM(?))",
+                (company_id, cat["event"]),
+            )
+            if existing:
+                continue
             await db.execute(
                 """INSERT INTO catalysts (company_id, event, expected_date, why_it_matters, occurred)
                    VALUES (?, ?, ?, ?, 0)""",
@@ -291,7 +297,7 @@ async def handle_update(data: dict) -> dict:
         # Catalysts remove
         for event_name in data.get("catalysts_remove", []):
             cursor = await db.execute(
-                "DELETE FROM catalysts WHERE company_id = ? AND LOWER(event) = LOWER(?)",
+                "DELETE FROM catalysts WHERE company_id = ? AND LOWER(TRIM(event)) = LOWER(TRIM(?))",
                 (company_id, event_name),
             )
             if cursor.rowcount == 0:
@@ -303,7 +309,7 @@ async def handle_update(data: dict) -> dict:
         for occ in data.get("catalysts_occurred", []):
             cursor = await db.execute(
                 """UPDATE catalysts SET occurred = 1, occurred_date = ?, outcome_summary = ?
-                   WHERE company_id = ? AND LOWER(event) = LOWER(?)""",
+                   WHERE company_id = ? AND LOWER(TRIM(event)) = LOWER(TRIM(?))""",
                 (
                     occ.get("occurred_date"),
                     occ.get("outcome_summary"),
