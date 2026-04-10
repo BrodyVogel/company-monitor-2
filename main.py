@@ -24,9 +24,9 @@ app.include_router(api_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse(request, "dashboard.html")
 
 
 @app.get("/company/{ticker}", response_class=HTMLResponse)
 async def company_page(request: Request, ticker: str):
-    return templates.TemplateResponse("company.html", {"request": request, "ticker": ticker})
+    return templates.TemplateResponse(request, "company.html", {"ticker": ticker})
