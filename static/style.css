@@ -1,0 +1,33 @@
+/* Research Portfolio — custom styles */
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Toast fade transition */
+.toast-enter {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.toast-exit {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Table horizontal scroll on mobile */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Subtle row hover */
+.portfolio-table tbody tr {
+  transition: background-color 0.15s ease;
+}
