@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     loadPortfolio();
     loadChanges();
+    initDropZone();
 });
 
 async function loadPortfolio() {
@@ -126,6 +127,55 @@ async function submitImport() {
         status.className = "import-status error";
         status.textContent = "Network error.";
     }
+}
+
+function initDropZone() {
+    const overlay = document.getElementById("dropOverlay");
+    let dragCounter = 0;
+
+    window.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        dragCounter++;
+        overlay.classList.add("active");
+    });
+    window.addEventListener("dragover", (e) => {
+        e.preventDefault();
+    });
+    window.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter <= 0) {
+            dragCounter = 0;
+            overlay.classList.remove("active");
+        }
+    });
+    window.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        overlay.classList.remove("active");
+
+        const file = e.dataTransfer.files[0];
+        if (!file || !file.name.endsWith(".json")) return;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            const res = await fetch("/api/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            const result = await res.json();
+            if (res.ok) {
+                loadPortfolio();
+                loadChanges();
+            } else {
+                alert(result.message || "Import failed.");
+            }
+        } catch {
+            alert("Failed to read or import file.");
+        }
+    });
 }
 
 function esc(s) {

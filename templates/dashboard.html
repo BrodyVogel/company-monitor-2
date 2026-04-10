@@ -43,6 +43,10 @@
         .import-status { margin-top: 12px; font-size: 14px; padding: 8px 12px; border-radius: 6px; display: none; }
         .import-status.success { display: block; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
         .import-status.error { display: block; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .drop-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(37,99,235,0.08); z-index: 200; justify-content: center; align-items: center; }
+        .drop-overlay.active { display: flex; }
+        .drop-overlay-inner { padding: 48px 64px; border: 3px dashed #2563eb; border-radius: 16px; background: rgba(255,255,255,0.95); text-align: center; }
+        .drop-overlay-inner p { font-size: 18px; font-weight: 600; color: #2563eb; }
     </style>
 </head>
 <body>
@@ -74,6 +78,12 @@
                 <button class="btn" onclick="closeImport()">Cancel</button>
                 <button class="btn btn-primary" onclick="submitImport()">Import</button>
             </div>
+        </div>
+    </div>
+
+    <div class="drop-overlay" id="dropOverlay">
+        <div class="drop-overlay-inner">
+            <p>Drop JSON file to import</p>
         </div>
     </div>
 

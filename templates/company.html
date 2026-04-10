@@ -49,6 +49,16 @@
         .history-summary { font-size: 14px; }
         .return-pos { color: #16a34a; font-weight: 600; }
         .return-neg { color: #dc2626; font-weight: 600; }
+        .drop-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(37,99,235,0.08); z-index: 200; justify-content: center; align-items: center; }
+        .drop-overlay.active { display: flex; }
+        .drop-overlay-inner { padding: 48px 64px; border: 3px dashed #2563eb; border-radius: 16px; background: rgba(255,255,255,0.95); text-align: center; }
+        .drop-overlay-inner p { font-size: 18px; font-weight: 600; color: #2563eb; }
+        .delete-link { color: #ef4444; font-size: 13px; cursor: pointer; text-decoration: none; }
+        .delete-link:hover { text-decoration: underline; }
+        .badge-event { background: #f3f4f6; color: #6b7280; font-size: 11px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+        .indicator-event { color: #9ca3af; }
+        .catalyst-past td { color: #6b7280; }
+        .catalyst-check { color: #22c55e; margin-right: 4px; }
     </style>
 </head>
 <body>
@@ -73,6 +83,12 @@
         <div class="tab-content" id="tab-scenarios"></div>
         <div class="tab-content" id="tab-model"></div>
         <div class="tab-content" id="tab-history"></div>
+    </div>
+
+    <div class="drop-overlay" id="dropOverlay">
+        <div class="drop-overlay-inner">
+            <p>Drop JSON file to import</p>
+        </div>
     </div>
 
     <script>
